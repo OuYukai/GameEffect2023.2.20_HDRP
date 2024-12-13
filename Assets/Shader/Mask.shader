@@ -25,13 +25,50 @@ Shader "FromASE/Mask"
             Name "Forward Unlit"
             Tags { "LightMode" = "ForwardOnly" }
             
-            Blend One One
+            Blend SrcAlpha One
             ZWrite Off
             
             HLSLPROGRAM
+            
+            #pragma vertex Vert
+            #pragma fragment Frag
 
-            
-            
+            sampler2D _MainTex;
+            float4 _MainTex_ST;
+
+            sampler2D _MaskTex;
+            float4 _MaskTex_ST;
+
+            float2 _MainTexSpeed;
+            float2 _MaskTexSpeed;
+
+            struct VertexInput
+            {
+                float4 vertex : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct VertexOutput
+            {
+                float4 vertex : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            VertexOutput Vert(VertexInput v)
+            {
+                VertexOutput o;
+                o.vertex = TransformObjectToHClip(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+
+                return o;
+            }
+
+            float4 Frag (VertexOutput i) : SV_Target
+            {
+                float4 col = tex2D(_MainTex, i.uv);
+
+                return col;
+            }
             ENDHLSL
         }
     }
