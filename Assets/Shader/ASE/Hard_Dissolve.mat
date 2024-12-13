@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Mask
-  m_Shader: {fileID: 4800000, guid: ffdbdc4573a90c5428aca5c0b192c032, type: 3}
+  m_Name: Hard_Dissolve
+  m_Shader: {fileID: 4800000, guid: e627d30c39efbfc4bbe568982e7c1814, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -19,7 +19,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: 3400
   stringTagMap:
     RenderType: Transparent
   disabledShaderPasses:
@@ -29,12 +29,16 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
-    - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 16429861ff7dec84cb293bf037461f14, type: 3}
+    - _DissolveTex:
+        m_Texture: {fileID: 2800000, guid: f50d85e6ebbe4674583999972107bc92, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _MaskTex:
-        m_Texture: {fileID: 2800000, guid: 6088faade4c13a44d8c20d36a6ec250b, type: 3}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: d124073fd99a7fa4e907acf5fc04aa16, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -42,9 +46,9 @@ Material:
     - _AddPrecomputedVelocity: 1
     - _AlphaCutoff: 0.5
     - _AlphaCutoffEnable: 0
-    - _AlphaDstBlend: 1
-    - _AlphaSrcBlend: 1
-    - _BlendMode: 1
+    - _AlphaDstBlend: 10
+    - _AlphaSrcBlend: 0
+    - _BlendMode: 0
     - _CullMode: 2
     - _CullModeForward: 2
     - _DistortionEnable: 0
@@ -52,12 +56,13 @@ Material:
     - _DoubleSidedEnable: 0
     - _DoubleSidedGIMode: 0
     - _DoubleSidedNormalMode: 2
-    - _DstBlend: 1
+    - _DstBlend: 10
     - _EnableFogOnTransparent: 1
+    - _Float0: 0
     - _OpaqueCullMode: 2
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
-    - _RenderQueueType: 4
+    - _RenderQueueType: 5
     - _RequireSplitLighting: 0
     - _SrcBlend: 1
     - _StencilRef: 0
@@ -85,8 +90,6 @@ Material:
     m_Colors:
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
-    - _MainTexSpeed: {r: 0, g: 0, b: 0, a: 0}
-    - _MaskTexSpeed: {r: 0, g: 0, b: 0, a: 0}
     - _UnlitColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
