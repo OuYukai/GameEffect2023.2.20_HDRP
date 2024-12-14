@@ -58,7 +58,7 @@ Shader "FromASE/Mask"
             {
                 VertexOutput o;
                 o.vertex = TransformObjectToHClip(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.uv = v.uv;
 
                 return o;
             }

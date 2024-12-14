@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Hard_Dissolve
-  m_Shader: {fileID: 4800000, guid: e627d30c39efbfc4bbe568982e7c1814, type: 3}
+  m_Name: Edge_Dissolve
+  m_Shader: {fileID: 4800000, guid: 9881ac9ea602f2f4b840704eebe8369f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -51,14 +51,15 @@ Material:
     - _BlendMode: 0
     - _CullMode: 2
     - _CullModeForward: 2
+    - _Dissolve: 0.08
     - _DistortionEnable: 0
     - _DistortionOnly: 0
     - _DoubleSidedEnable: 0
     - _DoubleSidedGIMode: 0
     - _DoubleSidedNormalMode: 2
     - _DstBlend: 10
+    - _EdgeWidth: 0.02
     - _EnableFogOnTransparent: 1
-    - _Float0: 0
     - _OpaqueCullMode: 2
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
@@ -89,6 +90,7 @@ Material:
     - _ZWrite: 0
     m_Colors:
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
+    - _EdgeColor: {r: 21.132076, g: 1.5577606, b: 0, a: 1}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _UnlitColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
