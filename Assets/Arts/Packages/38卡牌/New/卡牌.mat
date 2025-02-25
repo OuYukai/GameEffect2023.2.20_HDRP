@@ -1,0 +1,118 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: "\u5361\u724C"
+  m_Shader: {fileID: 4800000, guid: 54af748a57d2d504384a0d7dcfc36001, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Add_wenli:
+        m_Texture: {fileID: 2800000, guid: 0549157e95d20e545a77def2bfd2fddb, type: 3}
+        m_Scale: {x: 1, y: 0.2}
+        m_Offset: {x: 0, y: 0}
+    - _DissolveTex:
+        m_Texture: {fileID: 2800000, guid: a8ec158d03b1a5a44afd07c110ee088c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EdgeMask:
+        m_Texture: {fileID: 2800000, guid: 7bea1a91cf97b284c98c829f3e10859c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EdgeTex:
+        m_Texture: {fileID: 2800000, guid: 9c28ea7dca3c1814695572b7f10af2e8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _GradientTex:
+        m_Texture: {fileID: 2800000, guid: 0bdf5bf8c86cf0645861f844f02136d8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: 375b7a27abd79784695ea99c9ad73e6e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NoiseTex:
+        m_Texture: {fileID: 2800000, guid: 0549157e95d20e545a77def2bfd2fddb, type: 3}
+        m_Scale: {x: 1, y: 0.2}
+        m_Offset: {x: 0, y: 0}
+    - _T_kapai02:
+        m_Texture: {fileID: 2800000, guid: 375b7a27abd79784695ea99c9ad73e6e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _T_kapai_liangbian_01:
+        m_Texture: {fileID: 2800000, guid: 9c28ea7dca3c1814695572b7f10af2e8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _T_kapai_liangbian_2:
+        m_Texture: {fileID: 2800000, guid: 9c28ea7dca3c1814695572b7f10af2e8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _T_kapai_liangkuai01:
+        m_Texture: {fileID: 2800000, guid: a8ec158d03b1a5a44afd07c110ee088c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _T_xingkong:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Texture_shuagaung_02:
+        m_Texture: {fileID: 2800000, guid: 0bdf5bf8c86cf0645861f844f02136d8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Texture_shuagaung_3:
+        m_Texture: {fileID: 2800000, guid: 0bdf5bf8c86cf0645861f844f02136d8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Texture_shuaguang_01:
+        m_Texture: {fileID: 2800000, guid: 0bdf5bf8c86cf0645861f844f02136d8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Texture_shuaguang_2:
+        m_Texture: {fileID: 2800000, guid: 7bea1a91cf97b284c98c829f3e10859c, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Texture_wenli1:
+        m_Texture: {fileID: 2800000, guid: 0549157e95d20e545a77def2bfd2fddb, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _Dissolve: 1
+    - _Dissolve_progress: 1
+    - _EdgeIntensity: 5
+    - _Edge_jindu: -0.1949682
+    - _Edge_progress: -0.1949682
+    - _Gradient_Intensity: 1
+    - _Gradient_progress: 1
+    - _MainIntensity: 3
+    - _NoiseIntensity: 0.5
+    - _T_wenli_qiangdu: 0
+    - _T_wenli_qiangdu1: 0.3
+    - _shuaguang_01_jindu: -0.1949682
+    - _shuaguang_01_jindu1: 1
+    - _shuaguang_02: 0.1
+    - _shuaguang_3: 0.5
+    - _shuashuang_02_jindu: 1
+    - _shuashuang_02_jindu1: 1
+    m_Colors:
+    - _AddColor: {r: 4.237095, g: 1.0634605, b: 0, a: 1}
+    - _Color: {r: 4.237095, g: 1.0634605, b: 0, a: 1}
+    - _Color1: {r: 4.237095, g: 1.0634605, b: 0, a: 1}
+    - _Color_shuaguang: {r: 0.7075471, g: 0.2459251, b: 0, a: 0}
+    - _Color_shuaguang1: {r: 0.7075471, g: 0.24592522, b: 0, a: 0}
+    - _NoiseColor: {r: 0.7075471, g: 0.24592507, b: 0, a: 0}

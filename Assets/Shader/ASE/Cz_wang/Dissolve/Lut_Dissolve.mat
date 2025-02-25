@@ -60,10 +60,10 @@ Material:
     - _DoubleSidedGIMode: 0
     - _DoubleSidedNormalMode: 2
     - _DstBlend: 10
-    - _EdgeWidth: 0.092
+    - _EdgeWidth: 0.184
     - _EnableFogOnTransparent: 0
     - _OpaqueCullMode: 2
-    - _Progress: 0.512
+    - _Progress: 0
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
     - _RenderQueueType: 4
