@@ -58,7 +58,7 @@ Material:
     - _DstBlend: 10
     - _EnableFogOnTransparent: 0
     - _OpaqueCullMode: 2
-    - _Progress: 0
+    - _Progress: 0.47
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
     - _RenderQueueType: 5
