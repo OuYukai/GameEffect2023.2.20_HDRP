@@ -1,15 +1,22 @@
 // Made with Amplify Shader Editor v1.9.8
 // Available at the Unity Asset Store - http://u3d.as/y3X 
-Shader "Hue"
+Shader "Triangular Columns VertexOffset"
 {
 	Properties
 	{
 		[HideInInspector] _AlphaCutoff("Alpha Cutoff ", Range(0, 1)) = 0.5
-		_MainTex("Main Tex", 2D) = "white" {}
-		_Float0("Float 0", Range( -1 , 1)) = 0
+		_MainTex("MainTex", 2D) = "white" {}
+		[HDR]_MainColor("MainColor", Color) = (1,1,1,1)
+		_SubColor("SubColor", Color) = (0.03644535,0.2190231,0.3679245,1)
+		_NoiseTex("Noise Tex", 2D) = "white" {}
+		_NoiseXSpeed("NoiseXSpeed", Float) = 1
+		_NoiseYSpeed("NoiseYSpeed", Float) = 1
+		_Line("Line", 2D) = "white" {}
+		_LineSpeed("LineSpeed", Vector) = (0,1,0,0)
+		_Height("Height", Float) = -0.8
 		[HideInInspector] _texcoord( "", 2D ) = "white" {}
 
-		[HideInInspector] _RenderQueueType("Render Queue Type", Float) = 5
+		[HideInInspector] _RenderQueueType("Render Queue Type", Float) = 1
 		[HideInInspector][ToggleUI] _AddPrecomputedVelocity("Add Precomputed Velocity", Float) = 1
 		//[HideInInspector] _ShadowMatteFilter("Shadow Matte Filter", Float) = 2.006836
 		[HideInInspector] _StencilRef("Stencil Ref", Int) = 0 // StencilUsage.Clear
@@ -25,7 +32,7 @@ Shader "Hue"
 		[HideInInspector] _ZTestGBuffer("ZTest GBuffer", Int) = 4
 		[HideInInspector][ToggleUI] _RequireSplitLighting("Require Split Lighting", Float) = 0
 		[HideInInspector][ToggleUI] _ReceivesSSR("Receives SSR", Float) = 1
-		[HideInInspector] _SurfaceType("Surface Type", Float) = 0
+		[HideInInspector] _SurfaceType("Surface Type", Float) = 1
 		[HideInInspector] _BlendMode("Blend Mode", Float) = 0
 		[HideInInspector] _SrcBlend("Src Blend", Float) = 1
 		[HideInInspector] _DstBlend("Dst Blend", Float) = 0
@@ -35,11 +42,11 @@ Shader "Hue"
 		[HideInInspector][ToggleUI] _TransparentZWrite("Transparent ZWrite", Float) = 0
 		[HideInInspector] _CullMode("Cull Mode", Float) = 2
 		[HideInInspector] _TransparentSortPriority("Transparent Sort Priority", Float) = 0
-		[HideInInspector][ToggleUI] _EnableFogOnTransparent("Enable Fog", Float) = 1
+		[HideInInspector][ToggleUI] _EnableFogOnTransparent("Enable Fog", Float) = 0
 		[HideInInspector] _CullModeForward("Cull Mode Forward", Float) = 2 // This mode is dedicated to Forward to correctly handle backface then front face rendering thin transparent
-		[HideInInspector][Enum(UnityEditor.Rendering.HighDefinition.TransparentCullMode)] _TransparentCullMode("Transparent Cull Mode", Int) = 2 // Back culling by default
+		[HideInInspector][Enum(UnityEditor.Rendering.HighDefinition.TransparentCullMode)] _TransparentCullMode("Transparent Cull Mode", Int) = 2// Back culling by default
 		[HideInInspector] _ZTestDepthEqualForOpaque("ZTest Depth Equal For Opaque", Int) = 4 // Less equal
-		[HideInInspector][Enum(UnityEngine.Rendering.CompareFunction)] _ZTestTransparent("ZTest Transparent", Int) = 4 // Less equal
+		[HideInInspector][Enum(UnityEngine.Rendering.CompareFunction)] _ZTestTransparent("ZTest Transparent", Int) = 4// Less equal
 		[HideInInspector][ToggleUI] _TransparentBackfaceEnable("Transparent Backface Enable", Float) = 0
 		[HideInInspector][ToggleUI] _AlphaCutoffEnable("Alpha Cutoff Enable", Float) = 0
 		[HideInInspector][ToggleUI] _UseShadowThreshold("Use Shadow Threshold", Float) = 0
@@ -76,7 +83,7 @@ Shader "Hue"
 
 		HLSLINCLUDE
 		#pragma target 4.5
-		#pragma exclude_renderers glcore gles gles3 ps4 ps5 
+		#pragma only_renderers d3d11 
 
 		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
@@ -216,6 +223,7 @@ Shader "Hue"
 
 			#pragma multi_compile_instancing
 			#pragma instancing_options renderinglayer
+			#define HAVE_MESH_MODIFICATION 1
 			#define ASE_VERSION 19800
 			#define ASE_SRP_VERSION 160006
 
@@ -259,8 +267,14 @@ Shader "Hue"
 			#endif
 
 			CBUFFER_START( UnityPerMaterial )
+			float4 _NoiseTex_ST;
+			float4 _SubColor;
 			float4 _MainTex_ST;
-			float _Float0;
+			float4 _MainColor;
+			float2 _LineSpeed;
+			float _NoiseXSpeed;
+			float _NoiseYSpeed;
+			float _Height;
 			float4 _EmissionColor;
 			float _RenderQueueType;
 			#ifdef _ADD_PRECOMPUTED_VELOCITY
@@ -316,6 +330,8 @@ Shader "Hue"
 			#endif
 			CBUFFER_END
 
+			sampler2D _NoiseTex;
+			sampler2D _Line;
 			sampler2D _MainTex;
 
 
@@ -331,6 +347,8 @@ Shader "Hue"
 			{
 				float3 positionOS : POSITION;
 				float3 normalOS : NORMAL;
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
 				float4 ase_texcoord : TEXCOORD0;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
@@ -341,27 +359,12 @@ Shader "Hue"
 				float4 clipPosV : TEXCOORD0;
 				float3 positionRWS : TEXCOORD1;
 				float4 ase_texcoord2 : TEXCOORD2;
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
 
-			float3 HSVToRGB( float3 c )
-			{
-				float4 K = float4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );
-				float3 p = abs( frac( c.xxx + K.xyz ) * 6.0 - K.www );
-				return c.z * lerp( K.xxx, saturate( p - K.xxx ), c.y );
-			}
 			
-			float3 RGBToHSV(float3 c)
-			{
-				float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-				float4 p = lerp( float4( c.bg, K.wz ), float4( c.gb, K.xy ), step( c.b, c.g ) );
-				float4 q = lerp( float4( p.xyw, c.r ), float4( c.r, p.yzx ), step( p.x, c.r ) );
-				float d = q.x - min( q.w, q.y );
-				float e = 1.0e-10;
-				return float3( abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-			}
-
 			struct SurfaceDescription
 			{
 				float3 Color;
@@ -460,7 +463,15 @@ Shader "Hue"
 				UNITY_TRANSFER_INSTANCE_ID(inputMesh, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO( o );
 
+				float2 appendResult18 = (float2(_NoiseXSpeed , _NoiseYSpeed));
+				float2 uv2_NoiseTex = inputMesh.ase_texcoord1.xy * _NoiseTex_ST.xy + _NoiseTex_ST.zw;
+				float2 panner16 = ( 1.0 * _Time.y * appendResult18 + uv2_NoiseTex);
+				float2 texCoord21 = inputMesh.ase_texcoord1.xy * float2( 1,1 ) + float2( 0,0 );
+				float2 panner23 = ( _TimeParameters.y * _LineSpeed + texCoord21);
+				float4 appendResult31 = (float4(0.0 , 0.0 , ( ( ( tex2Dlod( _NoiseTex, float4( panner16, 0, 0.0) ).r * tex2Dlod( _Line, float4( panner23, 0, 0.0) ).r ) + _Height ) * inputMesh.ase_color.a ) , 0.0));
+				
 				o.ase_texcoord2.xy = inputMesh.ase_texcoord.xy;
+				o.ase_color = inputMesh.ase_color;
 				
 				//setting value to unused interpolator channels and avoid initialization warnings
 				o.ase_texcoord2.zw = 0;
@@ -469,7 +480,7 @@ Shader "Hue"
 				#else
 				float3 defaultVertexValue = float3( 0, 0, 0 );
 				#endif
-				float3 vertexValue = defaultVertexValue;
+				float3 vertexValue = appendResult31.xyz;
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				inputMesh.positionOS.xyz = vertexValue;
 				#else
@@ -490,6 +501,8 @@ Shader "Hue"
 			{
 				float3 positionOS : INTERNALTESSPOS;
 				float3 normalOS : NORMAL;
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
 				float4 ase_texcoord : TEXCOORD0;
 
 				UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -508,6 +521,8 @@ Shader "Hue"
 				UNITY_TRANSFER_INSTANCE_ID(v, o);
 				o.positionOS = v.positionOS;
 				o.normalOS = v.normalOS;
+				o.ase_texcoord1 = v.ase_texcoord1;
+				o.ase_color = v.ase_color;
 				o.ase_texcoord = v.ase_texcoord;
 				return o;
 			}
@@ -552,6 +567,8 @@ Shader "Hue"
 				VertexInput o = (VertexInput) 0;
 				o.positionOS = patch[0].positionOS * bary.x + patch[1].positionOS * bary.y + patch[2].positionOS * bary.z;
 				o.normalOS = patch[0].normalOS * bary.x + patch[1].normalOS * bary.y + patch[2].normalOS * bary.z;
+				o.ase_texcoord1 = patch[0].ase_texcoord1 * bary.x + patch[1].ase_texcoord1 * bary.y + patch[2].ase_texcoord1 * bary.z;
+				o.ase_color = patch[0].ase_color * bary.x + patch[1].ase_color * bary.y + patch[2].ase_color * bary.z;
 				o.ase_texcoord = patch[0].ase_texcoord * bary.x + patch[1].ase_texcoord * bary.y + patch[2].ase_texcoord * bary.z;
 				#if defined(ASE_PHONG_TESSELLATION)
 				float3 pp[3];
@@ -606,12 +623,12 @@ Shader "Hue"
 
 				SurfaceDescription surfaceDescription = (SurfaceDescription)0;
 				float2 uv_MainTex = packedInput.ase_texcoord2.xy * _MainTex_ST.xy + _MainTex_ST.zw;
-				float3 hsvTorgb9 = RGBToHSV( tex2D( _MainTex, uv_MainTex ).rgb );
-				float3 hsvTorgb10 = HSVToRGB( float3(( hsvTorgb9.x + _Float0 ),hsvTorgb9.y,hsvTorgb9.z) );
+				float4 tex2DNode8 = tex2D( _MainTex, uv_MainTex );
+				float4 lerpResult11 = lerp( _SubColor , ( tex2DNode8.r * _MainColor ) , tex2DNode8.r);
 				
-				surfaceDescription.Color = hsvTorgb10;
+				surfaceDescription.Color = lerpResult11.rgb;
 				surfaceDescription.Emission = 0;
-				surfaceDescription.Alpha = 1;
+				surfaceDescription.Alpha = packedInput.ase_color.a;
 				surfaceDescription.AlphaClipThreshold = _AlphaCutoff;
 				surfaceDescription.ShadowTint = float4( 0, 0 ,0 ,1 );
 				float2 Distortion = float2 ( 0, 0 );
@@ -694,369 +711,6 @@ Shader "Hue"
 		Pass
 		{
 			
-			Name "ShadowCaster"
-			Tags { "LightMode"="ShadowCaster" }
-
-			Cull [_CullMode]
-			ZWrite On
-			ZClip [_ZClip]
-			ColorMask 0
-
-			HLSLPROGRAM
-
-			#pragma multi_compile_instancing
-			#pragma instancing_options renderinglayer
-			#define ASE_VERSION 19800
-			#define ASE_SRP_VERSION 160006
-
-
-			#pragma shader_feature _SURFACE_TYPE_TRANSPARENT
-			#pragma shader_feature_local _ALPHATEST_ON
-
-			#pragma multi_compile _ DOTS_INSTANCING_ON
-
-			#pragma vertex Vert
-			#pragma fragment Frag
-
-			#if (defined(_TRANSPARENT_WRITES_MOTION_VEC) || defined(_TRANSPARENT_REFRACTIVE_SORT)) && defined(_SURFACE_TYPE_TRANSPARENT)
-			#define _WRITE_TRANSPARENT_MOTION_VECTOR
-			#endif
-
-			#define SHADERPASS SHADERPASS_SHADOWS
-			#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-        	#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/GeometricTools.hlsl"
-        	#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Tessellation.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Texture.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/FragInputs.hlsl"
-            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPass.cs.hlsl"
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/TextureStack.hlsl"
-            #include "Packages/com.unity.shadergraph/ShaderGraphLibrary/Functions.hlsl"
-
-			
-
-			struct VertexInput
-			{
-				float3 positionOS : POSITION;
-				float3 normalOS : NORMAL;
-				
-				UNITY_VERTEX_INPUT_INSTANCE_ID
-			};
-
-			struct VertexOutput
-			{
-				float4 positionCS : SV_Position;
-				float4 clipPosV : TEXCOORD0;
-				float3 positionRWS : TEXCOORD1;
-				
-				UNITY_VERTEX_INPUT_INSTANCE_ID
-				UNITY_VERTEX_OUTPUT_STEREO
-			};
-
-			CBUFFER_START( UnityPerMaterial )
-			float4 _MainTex_ST;
-			float _Float0;
-			float4 _EmissionColor;
-			float _RenderQueueType;
-			#ifdef _ADD_PRECOMPUTED_VELOCITY
-			float _AddPrecomputedVelocity;
-			#endif
-			#ifdef _ENABLE_SHADOW_MATTE
-			float _ShadowMatteFilter;
-			#endif
-			float _StencilRef;
-			float _StencilWriteMask;
-			float _StencilRefDepth;
-			float _StencilWriteMaskDepth;
-			float _StencilRefMV;
-			float _StencilWriteMaskMV;
-			float _StencilRefDistortionVec;
-			float _StencilWriteMaskDistortionVec;
-			float _StencilWriteMaskGBuffer;
-			float _StencilRefGBuffer;
-			float _ZTestGBuffer;
-			float _RequireSplitLighting;
-			float _ReceivesSSR;
-			float _SurfaceType;
-			float _BlendMode;
-			float _SrcBlend;
-			float _DstBlend;
-			float _DstBlend2;
-			float _AlphaSrcBlend;
-			float _AlphaDstBlend;
-			float _ZWrite;
-			float _TransparentZWrite;
-			float _CullMode;
-			float _TransparentSortPriority;
-			float _EnableFogOnTransparent;
-			float _CullModeForward;
-			float _TransparentCullMode;
-			float _ZTestDepthEqualForOpaque;
-			float _ZTestTransparent;
-			float _TransparentBackfaceEnable;
-			float _AlphaCutoffEnable;
-			float _AlphaCutoff;
-			float _UseShadowThreshold;
-			float _DoubleSidedEnable;
-			float _DoubleSidedNormalMode;
-			float4 _DoubleSidedConstants;
-			float _EnableBlendModePreserveSpecularLighting;
-			#ifdef ASE_TESSELLATION
-				float _TessPhongStrength;
-				float _TessValue;
-				float _TessMin;
-				float _TessMax;
-				float _TessEdgeLength;
-				float _TessMaxDisp;
-			#endif
-			CBUFFER_END
-
-			
-
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Unlit/Unlit.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/BuiltinUtilities.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/MaterialUtilities.hlsl"
-			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderGraphFunctions.hlsl"
-
-			
-			struct SurfaceDescription
-			{
-				float Alpha;
-				float AlphaClipThreshold;
-			};
-
-			void BuildSurfaceData(FragInputs fragInputs, SurfaceDescription surfaceDescription, float3 V, out SurfaceData surfaceData)
-			{
-				ZERO_INITIALIZE(SurfaceData, surfaceData);
-				#ifdef WRITE_NORMAL_BUFFER
-				surfaceData.normalWS = fragInputs.tangentToWorld[2];
-				#endif
-			}
-
-			void GetSurfaceAndBuiltinData(SurfaceDescription surfaceDescription, FragInputs fragInputs, float3 V, inout PositionInputs posInput, out SurfaceData surfaceData, out BuiltinData builtinData)
-			{
-				#ifdef LOD_FADE_CROSSFADE
-                LODDitheringTransition(ComputeFadeMaskSeed(V, posInput.positionSS), unity_LODFade.x);
-                #endif
-
-				#if _ALPHATEST_ON
-				DoAlphaTest(surfaceDescription.Alpha, surfaceDescription.AlphaClipThreshold);
-				#endif
-
-				#if _DEPTHOFFSET_ON
-                ApplyDepthOffsetPositionInput(V, surfaceDescription.DepthOffset, GetViewForwardDir(), GetWorldToHClipMatrix(), posInput);
-                #endif
-
-				BuildSurfaceData(fragInputs, surfaceDescription, V, surfaceData);
-
-				ZERO_INITIALIZE (BuiltinData, builtinData);
-				builtinData.opacity = surfaceDescription.Alpha;
-
-				#if defined(DEBUG_DISPLAY)
-					builtinData.renderingLayers = GetMeshRenderingLayerMask();
-				#endif
-
-				#ifdef _ALPHATEST_ON
-                    builtinData.alphaClipTreshold = surfaceDescription.AlphaClipThreshold;
-                #endif
-
-                #if _DEPTHOFFSET_ON
-                builtinData.depthOffset = surfaceDescription.DepthOffset;
-                #endif
-
-                ApplyDebugToBuiltinData(builtinData);
-			}
-
-			VertexOutput VertexFunction( VertexInput inputMesh  )
-			{
-				VertexOutput o;
-				UNITY_SETUP_INSTANCE_ID(inputMesh);
-				UNITY_TRANSFER_INSTANCE_ID(inputMesh, o);
-				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO( o );
-
-				
-				#ifdef ASE_ABSOLUTE_VERTEX_POS
-				float3 defaultVertexValue = inputMesh.positionOS.xyz;
-				#else
-				float3 defaultVertexValue = float3( 0, 0, 0 );
-				#endif
-				float3 vertexValue =  defaultVertexValue ;
-				#ifdef ASE_ABSOLUTE_VERTEX_POS
-				inputMesh.positionOS.xyz = vertexValue;
-				#else
-				inputMesh.positionOS.xyz += vertexValue;
-				#endif
-
-				inputMesh.normalOS =  inputMesh.normalOS ;
-
-				float3 positionRWS = TransformObjectToWorld(inputMesh.positionOS);
-				o.positionCS = TransformWorldToHClip(positionRWS);
-				o.clipPosV = o.positionCS;
-				o.positionRWS = positionRWS;
-				return o;
-			}
-
-			#if defined(ASE_TESSELLATION)
-			struct VertexControl
-			{
-				float3 positionOS : INTERNALTESSPOS;
-				float3 normalOS : NORMAL;
-				
-				UNITY_VERTEX_INPUT_INSTANCE_ID
-			};
-
-			struct TessellationFactors
-			{
-				float edge[3] : SV_TessFactor;
-				float inside : SV_InsideTessFactor;
-			};
-
-			VertexControl Vert ( VertexInput v )
-			{
-				VertexControl o;
-				UNITY_SETUP_INSTANCE_ID(v);
-				UNITY_TRANSFER_INSTANCE_ID(v, o);
-				o.positionOS = v.positionOS;
-				o.normalOS = v.normalOS;
-				
-				return o;
-			}
-
-			TessellationFactors TessellationFunction (InputPatch<VertexControl,3> v)
-			{
-				TessellationFactors o;
-				float4 tf = 1;
-				float tessValue = _TessValue; float tessMin = _TessMin; float tessMax = _TessMax;
-				float edgeLength = _TessEdgeLength; float tessMaxDisp = _TessMaxDisp;
-				#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
-				float3 cameraPos = 0;
-				#else
-				float3 cameraPos = _WorldSpaceCameraPos;
-				#endif
-				#if defined(ASE_FIXED_TESSELLATION)
-				tf = FixedTess( tessValue );
-				#elif defined(ASE_DISTANCE_TESSELLATION)
-				tf = DistanceBasedTess(float4(v[0].positionOS,1), float4(v[1].positionOS,1), float4(v[2].positionOS,1), tessValue, tessMin, tessMax, GetObjectToWorldMatrix(), cameraPos );
-				#elif defined(ASE_LENGTH_TESSELLATION)
-				tf = EdgeLengthBasedTess(float4(v[0].positionOS,1), float4(v[1].positionOS,1), float4(v[2].positionOS,1), edgeLength, GetObjectToWorldMatrix(), cameraPos, _ScreenParams );
-				#elif defined(ASE_LENGTH_CULL_TESSELLATION)
-				tf = EdgeLengthBasedTessCull(float4(v[0].positionOS,1), float4(v[1].positionOS,1), float4(v[2].positionOS,1), edgeLength, tessMaxDisp, GetObjectToWorldMatrix(), cameraPos, _ScreenParams, _FrustumPlanes );
-				#endif
-				o.edge[0] = tf.x; o.edge[1] = tf.y; o.edge[2] = tf.z; o.inside = tf.w;
-				return o;
-			}
-
-			[domain("tri")]
-			[partitioning("fractional_odd")]
-			[outputtopology("triangle_cw")]
-			[patchconstantfunc("TessellationFunction")]
-			[outputcontrolpoints(3)]
-			VertexControl HullFunction(InputPatch<VertexControl, 3> patch, uint id : SV_OutputControlPointID)
-			{
-			   return patch[id];
-			}
-
-			[domain("tri")]
-			VertexOutput DomainFunction(TessellationFactors factors, OutputPatch<VertexControl, 3> patch, float3 bary : SV_DomainLocation)
-			{
-				VertexInput o = (VertexInput) 0;
-				o.positionOS = patch[0].positionOS * bary.x + patch[1].positionOS * bary.y + patch[2].positionOS * bary.z;
-				o.normalOS = patch[0].normalOS * bary.x + patch[1].normalOS * bary.y + patch[2].normalOS * bary.z;
-				
-				#if defined(ASE_PHONG_TESSELLATION)
-				float3 pp[3];
-				for (int i = 0; i < 3; ++i)
-					pp[i] = o.positionOS.xyz - patch[i].normalOS * (dot(o.positionOS.xyz, patch[i].normalOS) - dot(patch[i].positionOS.xyz, patch[i].normalOS));
-				float phongStrength = _TessPhongStrength;
-				o.positionOS.xyz = phongStrength * (pp[0]*bary.x + pp[1]*bary.y + pp[2]*bary.z) + (1.0f-phongStrength) * o.positionOS.xyz;
-				#endif
-				UNITY_TRANSFER_INSTANCE_ID(patch[0], o);
-				return VertexFunction(o);
-			}
-			#else
-			VertexOutput Vert ( VertexInput v )
-			{
-				return VertexFunction( v );
-			}
-			#endif
-
-			void Frag( VertexOutput packedInput
-						#ifdef WRITE_MSAA_DEPTH
-						, out float4 depthColor : SV_Target0
-							#ifdef WRITE_NORMAL_BUFFER
-							, out float4 outNormalBuffer : SV_Target1
-							#endif
-						#else
-							#ifdef WRITE_NORMAL_BUFFER
-							, out float4 outNormalBuffer : SV_Target0
-							#endif
-						#endif
-						#if defined(_DEPTHOFFSET_ON)
-						, out float outputDepth : DEPTH_OFFSET_SEMANTIC
-						#endif
-					
-					)
-			{
-				UNITY_SETUP_INSTANCE_ID( packedInput );
-				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX( packedInput );
-		
-				float3 PositionRWS = packedInput.positionRWS;
-				float3 V = GetWorldSpaceNormalizeViewDir( packedInput.positionRWS );
-				float4 ClipPos = packedInput.clipPosV;
-				float4 ScreenPos = ComputeScreenPos( packedInput.clipPosV, _ProjectionParams.x );
-
-				FragInputs input;
-				ZERO_INITIALIZE(FragInputs, input);
-				input.tangentToWorld = k_identity3x3;
-				input.positionSS = packedInput.positionCS;
-				input.positionRWS = PositionRWS;
-
-				PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw, input.positionSS.z, input.positionSS.w, input.positionRWS);
-
-				SurfaceDescription surfaceDescription = (SurfaceDescription)0;
-				
-				surfaceDescription.Alpha = 1;
-				surfaceDescription.AlphaClipThreshold = _AlphaCutoff;
-
-				SurfaceData surfaceData;
-				BuiltinData builtinData;
-				GetSurfaceAndBuiltinData(surfaceDescription,input, V, posInput, surfaceData, builtinData);
-
-				#if defined(_DEPTHOFFSET_ON)
-				outputDepth = posInput.deviceDepth;
-				float bias = max(abs(ddx(posInput.deviceDepth)), abs(ddy(posInput.deviceDepth))) * _SlopeScaleDepthBias;
-				outputDepth += bias;
-				#endif
-
-				#ifdef WRITE_MSAA_DEPTH
-					depthColor = packedInput.vmesh.positionCS.z;
-					depthColor.a = SharpenAlpha(builtinData.opacity, builtinData.alphaClipTreshold);
-				#endif
-
-				#if defined(WRITE_NORMAL_BUFFER)
-				EncodeIntoNormalBuffer(ConvertSurfaceDataToNormalData(surfaceData), outNormalBuffer);
-				#endif
-
-				#if (defined(WRITE_DECAL_BUFFER) && !defined(_DISABLE_DECALS)) || defined(WRITE_RENDERING_LAYER)
-					DecalPrepassData decalPrepassData;
-					#ifdef _DISABLE_DECALS
-					ZERO_INITIALIZE(DecalPrepassData, decalPrepassData);
-					#else
-					decalPrepassData.geomNormalWS = surfaceData.geomNormalWS;
-					#endif
-					decalPrepassData.renderingLayerMask = GetMeshRenderingLayerMask();
-					EncodeIntoDecalPrepassBuffer(decalPrepassData, outDecalBuffer);
-				#endif
-			}
-			ENDHLSL
-		}
-
-		
-		Pass
-		{
-			
 			Name "META"
 			Tags { "LightMode"="Meta" }
 
@@ -1066,6 +720,7 @@ Shader "Hue"
 
 			#pragma multi_compile_instancing
 			#pragma instancing_options renderinglayer
+			#define HAVE_MESH_MODIFICATION 1
 			#define ASE_VERSION 19800
 			#define ASE_SRP_VERSION 160006
 
@@ -1095,8 +750,14 @@ Shader "Hue"
             #include "Packages/com.unity.shadergraph/ShaderGraphLibrary/Functions.hlsl"
 
 			CBUFFER_START( UnityPerMaterial )
+			float4 _NoiseTex_ST;
+			float4 _SubColor;
 			float4 _MainTex_ST;
-			float _Float0;
+			float4 _MainColor;
+			float2 _LineSpeed;
+			float _NoiseXSpeed;
+			float _NoiseYSpeed;
+			float _Height;
 			float4 _EmissionColor;
 			float _RenderQueueType;
 			#ifdef _ADD_PRECOMPUTED_VELOCITY
@@ -1152,6 +813,8 @@ Shader "Hue"
 			#endif
 			CBUFFER_END
 
+			sampler2D _NoiseTex;
+			sampler2D _Line;
 			sampler2D _MainTex;
 
 
@@ -1172,7 +835,7 @@ Shader "Hue"
 				float4 uv1 : TEXCOORD1;
 				float4 uv2 : TEXCOORD2;
 				float4 uv3 : TEXCOORD3;
-				
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -1184,27 +847,12 @@ Shader "Hue"
 				float4 LightCoord : TEXCOORD1;
 				#endif
 				float4 ase_texcoord2 : TEXCOORD2;
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 
-			float3 HSVToRGB( float3 c )
-			{
-				float4 K = float4( 1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0 );
-				float3 p = abs( frac( c.xxx + K.xyz ) * 6.0 - K.www );
-				return c.z * lerp( K.xxx, saturate( p - K.xxx ), c.y );
-			}
 			
-			float3 RGBToHSV(float3 c)
-			{
-				float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-				float4 p = lerp( float4( c.bg, K.wz ), float4( c.gb, K.xy ), step( c.b, c.g ) );
-				float4 q = lerp( float4( p.xyw, c.r ), float4( c.r, p.yzx ), step( p.x, c.r ) );
-				float d = q.x - min( q.w, q.y );
-				float e = 1.0e-10;
-				return float3( abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-			}
-
 			struct SurfaceDescription
 			{
 				float3 Color;
@@ -1268,7 +916,15 @@ Shader "Hue"
 				UNITY_SETUP_INSTANCE_ID( inputMesh );
 				UNITY_TRANSFER_INSTANCE_ID( inputMesh, o );
 
+				float2 appendResult18 = (float2(_NoiseXSpeed , _NoiseYSpeed));
+				float2 uv2_NoiseTex = inputMesh.uv1.xy * _NoiseTex_ST.xy + _NoiseTex_ST.zw;
+				float2 panner16 = ( 1.0 * _Time.y * appendResult18 + uv2_NoiseTex);
+				float2 texCoord21 = inputMesh.uv1.xy * float2( 1,1 ) + float2( 0,0 );
+				float2 panner23 = ( _TimeParameters.y * _LineSpeed + texCoord21);
+				float4 appendResult31 = (float4(0.0 , 0.0 , ( ( ( tex2Dlod( _NoiseTex, float4( panner16, 0, 0.0) ).r * tex2Dlod( _Line, float4( panner23, 0, 0.0) ).r ) + _Height ) * inputMesh.ase_color.a ) , 0.0));
+				
 				o.ase_texcoord2.xy = inputMesh.uv0.xy;
+				o.ase_color = inputMesh.ase_color;
 				
 				//setting value to unused interpolator channels and avoid initialization warnings
 				o.ase_texcoord2.zw = 0;
@@ -1277,7 +933,7 @@ Shader "Hue"
 				#else
 				float3 defaultVertexValue = float3( 0, 0, 0 );
 				#endif
-				float3 vertexValue =  defaultVertexValue ;
+				float3 vertexValue = appendResult31.xyz;
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				inputMesh.positionOS.xyz = vertexValue;
 				#else
@@ -1320,7 +976,8 @@ Shader "Hue"
 				float4 uv1 : TEXCOORD1;
 				float4 uv2 : TEXCOORD2;
 				float4 uv3 : TEXCOORD3;
-				
+				float4 ase_color : COLOR;
+
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -1341,7 +998,7 @@ Shader "Hue"
 				o.uv1 = v.uv1;
 				o.uv2 = v.uv2;
 				o.uv3 = v.uv3;
-				
+				o.ase_color = v.ase_color;
 				return o;
 			}
 
@@ -1389,7 +1046,7 @@ Shader "Hue"
 				o.uv1 = patch[0].uv1 * bary.x + patch[1].uv1 * bary.y + patch[2].uv1 * bary.z;
 				o.uv2 = patch[0].uv2 * bary.x + patch[1].uv2 * bary.y + patch[2].uv2 * bary.z;
 				o.uv3 = patch[0].uv3 * bary.x + patch[1].uv3 * bary.y + patch[2].uv3 * bary.z;
-				
+				o.ase_color = patch[0].ase_color * bary.x + patch[1].ase_color * bary.y + patch[2].ase_color * bary.z;
 				#if defined(ASE_PHONG_TESSELLATION)
 				float3 pp[3];
 				for (int i = 0; i < 3; ++i)
@@ -1421,12 +1078,12 @@ Shader "Hue"
 
 				SurfaceDescription surfaceDescription = (SurfaceDescription)0;
 				float2 uv_MainTex = packedInput.ase_texcoord2.xy * _MainTex_ST.xy + _MainTex_ST.zw;
-				float3 hsvTorgb9 = RGBToHSV( tex2D( _MainTex, uv_MainTex ).rgb );
-				float3 hsvTorgb10 = HSVToRGB( float3(( hsvTorgb9.x + _Float0 ),hsvTorgb9.y,hsvTorgb9.z) );
+				float4 tex2DNode8 = tex2D( _MainTex, uv_MainTex );
+				float4 lerpResult11 = lerp( _SubColor , ( tex2DNode8.r * _MainColor ) , tex2DNode8.r);
 				
-				surfaceDescription.Color = hsvTorgb10;
+				surfaceDescription.Color = lerpResult11.rgb;
 				surfaceDescription.Emission = 0;
-				surfaceDescription.Alpha = 1;
+				surfaceDescription.Alpha = packedInput.ase_color.a;
 				surfaceDescription.AlphaClipThreshold =  _AlphaCutoff;
 
 				SurfaceData surfaceData;
@@ -1465,6 +1122,7 @@ Shader "Hue"
 
 			#pragma multi_compile_instancing
 			#pragma instancing_options renderinglayer
+			#define HAVE_MESH_MODIFICATION 1
 			#define ASE_VERSION 19800
 			#define ASE_SRP_VERSION 160006
 
@@ -1496,8 +1154,14 @@ Shader "Hue"
 			int _PassValue;
 
 			CBUFFER_START( UnityPerMaterial )
+			float4 _NoiseTex_ST;
+			float4 _SubColor;
 			float4 _MainTex_ST;
-			float _Float0;
+			float4 _MainColor;
+			float2 _LineSpeed;
+			float _NoiseXSpeed;
+			float _NoiseYSpeed;
+			float _Height;
 			float4 _EmissionColor;
 			float _RenderQueueType;
 			#ifdef _ADD_PRECOMPUTED_VELOCITY
@@ -1553,7 +1217,9 @@ Shader "Hue"
 			#endif
 			CBUFFER_END
 
-			
+			sampler2D _NoiseTex;
+			sampler2D _Line;
+
 
 			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/PickingSpaceTransforms.hlsl"
 			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
@@ -1569,14 +1235,15 @@ Shader "Hue"
 			{
 				float3 positionOS : POSITION;
 				float3 normalOS : NORMAL;
-				
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
 			struct VertexOutput
 			{
 				float4 positionCS : SV_Position;
-				
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -1631,13 +1298,20 @@ Shader "Hue"
 				UNITY_TRANSFER_INSTANCE_ID(inputMesh, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO( o );
 
+				float2 appendResult18 = (float2(_NoiseXSpeed , _NoiseYSpeed));
+				float2 uv2_NoiseTex = inputMesh.ase_texcoord1.xy * _NoiseTex_ST.xy + _NoiseTex_ST.zw;
+				float2 panner16 = ( 1.0 * _Time.y * appendResult18 + uv2_NoiseTex);
+				float2 texCoord21 = inputMesh.ase_texcoord1.xy * float2( 1,1 ) + float2( 0,0 );
+				float2 panner23 = ( _TimeParameters.y * _LineSpeed + texCoord21);
+				float4 appendResult31 = (float4(0.0 , 0.0 , ( ( ( tex2Dlod( _NoiseTex, float4( panner16, 0, 0.0) ).r * tex2Dlod( _Line, float4( panner23, 0, 0.0) ).r ) + _Height ) * inputMesh.ase_color.a ) , 0.0));
 				
+				o.ase_color = inputMesh.ase_color;
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				float3 defaultVertexValue = inputMesh.positionOS.xyz;
 				#else
 				float3 defaultVertexValue = float3( 0, 0, 0 );
 				#endif
-				float3 vertexValue =   defaultVertexValue ;
+				float3 vertexValue =  appendResult31.xyz;
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				inputMesh.positionOS.xyz = vertexValue;
 				#else
@@ -1656,7 +1330,9 @@ Shader "Hue"
 			{
 				float3 positionOS : INTERNALTESSPOS;
 				float3 normalOS : NORMAL;
-				
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
+
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -1673,7 +1349,8 @@ Shader "Hue"
 				UNITY_TRANSFER_INSTANCE_ID(v, o);
 				o.positionOS = v.positionOS;
 				o.normalOS = v.normalOS;
-				
+				o.ase_texcoord1 = v.ase_texcoord1;
+				o.ase_color = v.ase_color;
 				return o;
 			}
 
@@ -1717,7 +1394,8 @@ Shader "Hue"
 				VertexInput o = (VertexInput) 0;
 				o.positionOS = patch[0].positionOS * bary.x + patch[1].positionOS * bary.y + patch[2].positionOS * bary.z;
 				o.normalOS = patch[0].normalOS * bary.x + patch[1].normalOS * bary.y + patch[2].normalOS * bary.z;
-				
+				o.ase_texcoord1 = patch[0].ase_texcoord1 * bary.x + patch[1].ase_texcoord1 * bary.y + patch[2].ase_texcoord1 * bary.z;
+				o.ase_color = patch[0].ase_color * bary.x + patch[1].ase_color * bary.y + patch[2].ase_color * bary.z;
 				#if defined(ASE_PHONG_TESSELLATION)
 				float3 pp[3];
 				for (int i = 0; i < 3; ++i)
@@ -1758,7 +1436,7 @@ Shader "Hue"
 				BuiltinData builtinData;
 				SurfaceDescription surfaceDescription = (SurfaceDescription)0;
 				
-				surfaceDescription.Alpha = 1;
+				surfaceDescription.Alpha = packedInput.ase_color.a;
 				surfaceDescription.AlphaClipThreshold =  _AlphaCutoff;
 
 				GetSurfaceAndBuiltinData(surfaceDescription, input, V, posInput, surfaceData, builtinData);
@@ -1797,6 +1475,7 @@ Shader "Hue"
 
 			#pragma multi_compile_instancing
 			#pragma instancing_options renderinglayer
+			#define HAVE_MESH_MODIFICATION 1
 			#define ASE_VERSION 19800
 			#define ASE_SRP_VERSION 160006
 
@@ -1824,8 +1503,14 @@ Shader "Hue"
             #include "Packages/com.unity.shadergraph/ShaderGraphLibrary/Functions.hlsl"
 
 			CBUFFER_START( UnityPerMaterial )
+			float4 _NoiseTex_ST;
+			float4 _SubColor;
 			float4 _MainTex_ST;
-			float _Float0;
+			float4 _MainColor;
+			float2 _LineSpeed;
+			float _NoiseXSpeed;
+			float _NoiseYSpeed;
+			float _Height;
 			float4 _EmissionColor;
 			float _RenderQueueType;
 			#ifdef _ADD_PRECOMPUTED_VELOCITY
@@ -1881,7 +1566,9 @@ Shader "Hue"
 			#endif
 			CBUFFER_END
 
-			
+			sampler2D _NoiseTex;
+			sampler2D _Line;
+
 
 			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
 			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
@@ -1896,7 +1583,8 @@ Shader "Hue"
 			{
 				float3 positionOS : POSITION;
 				float3 normalOS : NORMAL;
-				
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -1905,7 +1593,7 @@ Shader "Hue"
 				float4 positionCS : SV_Position;
 				float4 clipPosV : TEXCOORD0;
 				float3 positionRWS : TEXCOORD1;
-				
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -1965,13 +1653,20 @@ Shader "Hue"
 				UNITY_TRANSFER_INSTANCE_ID(inputMesh, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO( o );
 
+				float2 appendResult18 = (float2(_NoiseXSpeed , _NoiseYSpeed));
+				float2 uv2_NoiseTex = inputMesh.ase_texcoord1.xy * _NoiseTex_ST.xy + _NoiseTex_ST.zw;
+				float2 panner16 = ( 1.0 * _Time.y * appendResult18 + uv2_NoiseTex);
+				float2 texCoord21 = inputMesh.ase_texcoord1.xy * float2( 1,1 ) + float2( 0,0 );
+				float2 panner23 = ( _TimeParameters.y * _LineSpeed + texCoord21);
+				float4 appendResult31 = (float4(0.0 , 0.0 , ( ( ( tex2Dlod( _NoiseTex, float4( panner16, 0, 0.0) ).r * tex2Dlod( _Line, float4( panner23, 0, 0.0) ).r ) + _Height ) * inputMesh.ase_color.a ) , 0.0));
 				
+				o.ase_color = inputMesh.ase_color;
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				float3 defaultVertexValue = inputMesh.positionOS.xyz;
 				#else
 				float3 defaultVertexValue = float3( 0, 0, 0 );
 				#endif
-				float3 vertexValue =   defaultVertexValue ;
+				float3 vertexValue =  appendResult31.xyz;
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				inputMesh.positionOS.xyz = vertexValue;
 				#else
@@ -1992,7 +1687,9 @@ Shader "Hue"
 			{
 				float3 positionOS : INTERNALTESSPOS;
 				float3 normalOS : NORMAL;
-				
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
+
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -2009,7 +1706,8 @@ Shader "Hue"
 				UNITY_TRANSFER_INSTANCE_ID(v, o);
 				o.positionOS = v.positionOS;
 				o.normalOS = v.normalOS;
-				
+				o.ase_texcoord1 = v.ase_texcoord1;
+				o.ase_color = v.ase_color;
 				return o;
 			}
 
@@ -2053,7 +1751,8 @@ Shader "Hue"
 				VertexInput o = (VertexInput) 0;
 				o.positionOS = patch[0].positionOS * bary.x + patch[1].positionOS * bary.y + patch[2].positionOS * bary.z;
 				o.normalOS = patch[0].normalOS * bary.x + patch[1].normalOS * bary.y + patch[2].normalOS * bary.z;
-				
+				o.ase_texcoord1 = patch[0].ase_texcoord1 * bary.x + patch[1].ase_texcoord1 * bary.y + patch[2].ase_texcoord1 * bary.z;
+				o.ase_color = patch[0].ase_color * bary.x + patch[1].ase_color * bary.y + patch[2].ase_color * bary.z;
 				#if defined(ASE_PHONG_TESSELLATION)
 				float3 pp[3];
 				for (int i = 0; i < 3; ++i)
@@ -2106,7 +1805,7 @@ Shader "Hue"
 
 				SurfaceDescription surfaceDescription = (SurfaceDescription)0;
 				
-				surfaceDescription.Alpha = 1;
+				surfaceDescription.Alpha = packedInput.ase_color.a;
 				surfaceDescription.AlphaClipThreshold =  _AlphaCutoff;
 
 				SurfaceData surfaceData;
@@ -2156,6 +1855,7 @@ Shader "Hue"
 
 			#pragma multi_compile_instancing
 			#pragma instancing_options renderinglayer
+			#define HAVE_MESH_MODIFICATION 1
 			#define ASE_VERSION 19800
 			#define ASE_SRP_VERSION 160006
 
@@ -2187,8 +1887,14 @@ Shader "Hue"
             #include "Packages/com.unity.shadergraph/ShaderGraphLibrary/Functions.hlsl"
 
 			CBUFFER_START( UnityPerMaterial )
+			float4 _NoiseTex_ST;
+			float4 _SubColor;
 			float4 _MainTex_ST;
-			float _Float0;
+			float4 _MainColor;
+			float2 _LineSpeed;
+			float _NoiseXSpeed;
+			float _NoiseYSpeed;
+			float _Height;
 			float4 _EmissionColor;
 			float _RenderQueueType;
 			#ifdef _ADD_PRECOMPUTED_VELOCITY
@@ -2244,7 +1950,9 @@ Shader "Hue"
 			#endif
 			CBUFFER_END
 
-			
+			sampler2D _NoiseTex;
+			sampler2D _Line;
+
 
 			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
 			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Material.hlsl"
@@ -2261,7 +1969,8 @@ Shader "Hue"
 				float3 normalOS : NORMAL;
 				float3 previousPositionOS : TEXCOORD4;
 				float3 precomputedVelocity : TEXCOORD5;
-				
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -2271,7 +1980,7 @@ Shader "Hue"
 				float3 vmeshInterp00 : TEXCOORD0;
 				float3 vpassInterpolators0 : TEXCOORD1; //interpolators0
 				float3 vpassInterpolators1 : TEXCOORD2; //interpolators1
-				
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -2329,14 +2038,21 @@ Shader "Hue"
 			VertexInput ApplyMeshModification(VertexInput inputMesh, float3 timeParameters, inout VertexOutput o )
 			{
 				_TimeParameters.xyz = timeParameters;
+				float2 appendResult18 = (float2(_NoiseXSpeed , _NoiseYSpeed));
+				float2 uv2_NoiseTex = inputMesh.ase_texcoord1.xy * _NoiseTex_ST.xy + _NoiseTex_ST.zw;
+				float2 panner16 = ( 1.0 * _Time.y * appendResult18 + uv2_NoiseTex);
+				float2 texCoord21 = inputMesh.ase_texcoord1.xy * float2( 1,1 ) + float2( 0,0 );
+				float2 panner23 = ( _TimeParameters.y * _LineSpeed + texCoord21);
+				float4 appendResult31 = (float4(0.0 , 0.0 , ( ( ( tex2Dlod( _NoiseTex, float4( panner16, 0, 0.0) ).r * tex2Dlod( _Line, float4( panner23, 0, 0.0) ).r ) + _Height ) * inputMesh.ase_color.a ) , 0.0));
 				
+				o.ase_color = inputMesh.ase_color;
 
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				float3 defaultVertexValue = inputMesh.positionOS.xyz;
 				#else
 				float3 defaultVertexValue = float3( 0, 0, 0 );
 				#endif
-				float3 vertexValue =  defaultVertexValue ;
+				float3 vertexValue = appendResult31.xyz;
 
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				inputMesh.positionOS.xyz = vertexValue;
@@ -2426,7 +2142,9 @@ Shader "Hue"
 				float3 normalOS : NORMAL;
 				float3 previousPositionOS : TEXCOORD4;
 				float3 precomputedVelocity : TEXCOORD5;
-				
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
+
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -2447,7 +2165,8 @@ Shader "Hue"
 				#if defined (_ADD_PRECOMPUTED_VELOCITY)
 					o.precomputedVelocity = v.precomputedVelocity;
 				#endif
-				
+				o.ase_texcoord1 = v.ase_texcoord1;
+				o.ase_color = v.ase_color;
 				return o;
 			}
 
@@ -2495,7 +2214,8 @@ Shader "Hue"
 				#if defined (_ADD_PRECOMPUTED_VELOCITY)
 					o.precomputedVelocity = patch[0].precomputedVelocity * bary.x + patch[1].precomputedVelocity * bary.y + patch[2].precomputedVelocity * bary.z;
 				#endif
-				
+				o.ase_texcoord1 = patch[0].ase_texcoord1 * bary.x + patch[1].ase_texcoord1 * bary.y + patch[2].ase_texcoord1 * bary.z;
+				o.ase_color = patch[0].ase_color * bary.x + patch[1].ase_color * bary.y + patch[2].ase_color * bary.z;
 				#if defined(ASE_PHONG_TESSELLATION)
 				float3 pp[3];
 				for (int i = 0; i < 3; ++i)
@@ -2559,7 +2279,7 @@ Shader "Hue"
 
 				SurfaceDescription surfaceDescription = (SurfaceDescription)0;
 				
-				surfaceDescription.Alpha = 1;
+				surfaceDescription.Alpha = packedInput.ase_color.a;
 				surfaceDescription.AlphaClipThreshold = _AlphaCutoff;
 
 				SurfaceData surfaceData;
@@ -2622,6 +2342,7 @@ Shader "Hue"
 
 			#pragma multi_compile_instancing
 			#pragma instancing_options renderinglayer
+			#define HAVE_MESH_MODIFICATION 1
 			#define ASE_VERSION 19800
 			#define ASE_SRP_VERSION 160006
 
@@ -2662,8 +2383,14 @@ Shader "Hue"
 			float4 _SelectionID;
 
             CBUFFER_START( UnityPerMaterial )
+			float4 _NoiseTex_ST;
+			float4 _SubColor;
 			float4 _MainTex_ST;
-			float _Float0;
+			float4 _MainColor;
+			float2 _LineSpeed;
+			float _NoiseXSpeed;
+			float _NoiseYSpeed;
+			float _Height;
 			float4 _EmissionColor;
 			float _RenderQueueType;
 			#ifdef _ADD_PRECOMPUTED_VELOCITY
@@ -2719,7 +2446,9 @@ Shader "Hue"
 			#endif
 			CBUFFER_END
 
-			
+			sampler2D _NoiseTex;
+			sampler2D _Line;
+
 
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/PickingSpaceTransforms.hlsl"
 			#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplay.hlsl"
@@ -2736,7 +2465,8 @@ Shader "Hue"
 				float3 positionOS : POSITION;
 				float3 normalOS : NORMAL;
 				float4 tangentOS : TANGENT;
-				
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -2745,7 +2475,7 @@ Shader "Hue"
 				float4 positionCS : SV_POSITION;
 				float3 normalWS : TEXCOORD0;
 				float4 tangentWS : TEXCOORD1;
-				
+				float4 ase_color : COLOR;
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 				UNITY_VERTEX_OUTPUT_STEREO
 			};
@@ -2807,13 +2537,20 @@ Shader "Hue"
 				UNITY_SETUP_INSTANCE_ID(inputMesh);
 				UNITY_TRANSFER_INSTANCE_ID(inputMesh, o );
 
+				float2 appendResult18 = (float2(_NoiseXSpeed , _NoiseYSpeed));
+				float2 uv2_NoiseTex = inputMesh.ase_texcoord1.xy * _NoiseTex_ST.xy + _NoiseTex_ST.zw;
+				float2 panner16 = ( 1.0 * _Time.y * appendResult18 + uv2_NoiseTex);
+				float2 texCoord21 = inputMesh.ase_texcoord1.xy * float2( 1,1 ) + float2( 0,0 );
+				float2 panner23 = ( _TimeParameters.y * _LineSpeed + texCoord21);
+				float4 appendResult31 = (float4(0.0 , 0.0 , ( ( ( tex2Dlod( _NoiseTex, float4( panner16, 0, 0.0) ).r * tex2Dlod( _Line, float4( panner23, 0, 0.0) ).r ) + _Height ) * inputMesh.ase_color.a ) , 0.0));
 				
+				o.ase_color = inputMesh.ase_color;
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				float3 defaultVertexValue = inputMesh.positionOS.xyz;
 				#else
 				float3 defaultVertexValue = float3( 0, 0, 0 );
 				#endif
-				float3 vertexValue =   defaultVertexValue ;
+				float3 vertexValue =  appendResult31.xyz;
 				#ifdef ASE_ABSOLUTE_VERTEX_POS
 				inputMesh.positionOS.xyz = vertexValue;
 				#else
@@ -2839,7 +2576,9 @@ Shader "Hue"
 				float3 positionOS : INTERNALTESSPOS;
 				float3 normalOS : NORMAL;
 				float4 tangentOS : TANGENT;
-				
+				float4 ase_texcoord1 : TEXCOORD1;
+				float4 ase_color : COLOR;
+
 				UNITY_VERTEX_INPUT_INSTANCE_ID
 			};
 
@@ -2857,7 +2596,8 @@ Shader "Hue"
 				o.positionOS = v.positionOS;
 				o.normalOS = v.normalOS;
 				o.tangentOS = v.tangentOS;
-				
+				o.ase_texcoord1 = v.ase_texcoord1;
+				o.ase_color = v.ase_color;
 				return o;
 			}
 
@@ -2902,7 +2642,8 @@ Shader "Hue"
 				o.positionOS = patch[0].positionOS * bary.x + patch[1].positionOS * bary.y + patch[2].positionOS * bary.z;
 				o.normalOS = patch[0].normalOS * bary.x + patch[1].normalOS * bary.y + patch[2].normalOS * bary.z;
 				o.tangentOS = patch[0].tangentOS * bary.x + patch[1].tangentOS * bary.y + patch[2].tangentOS * bary.z;
-				
+				o.ase_texcoord1 = patch[0].ase_texcoord1 * bary.x + patch[1].ase_texcoord1 * bary.y + patch[2].ase_texcoord1 * bary.z;
+				o.ase_color = patch[0].ase_color * bary.x + patch[1].ase_color * bary.y + patch[2].ase_color * bary.z;
 				#if defined(ASE_PHONG_TESSELLATION)
 				float3 pp[3];
 				for (int i = 0; i < 3; ++i)
@@ -2939,7 +2680,7 @@ Shader "Hue"
 
 				SurfaceDescription surfaceDescription = (SurfaceDescription)0;
 				
-				surfaceDescription.Alpha = 1;
+				surfaceDescription.Alpha = packedInput.ase_color.a;
 				surfaceDescription.AlphaClipThreshold =  _AlphaCutoff;
 
 
@@ -3085,11 +2826,28 @@ Shader "Hue"
 }
 /*ASEBEGIN
 Version=19800
-Node;AmplifyShaderEditor.SamplerNode;8;-1008,80;Inherit;True;Property;_MainTex;Main Tex;0;0;Create;True;0;0;0;False;0;False;-1;b3e615a3a916f3c4c8b2dc4f2746290a;b3e615a3a916f3c4c8b2dc4f2746290a;True;0;False;white;Auto;False;Object;-1;Auto;Texture2D;8;0;SAMPLER2D;;False;1;FLOAT2;0,0;False;2;FLOAT;0;False;3;FLOAT2;0,0;False;4;FLOAT2;0,0;False;5;FLOAT;1;False;6;FLOAT;0;False;7;SAMPLERSTATE;;False;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
-Node;AmplifyShaderEditor.SimpleAddOpNode;11;-304,96;Inherit;True;2;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
-Node;AmplifyShaderEditor.RangedFloatNode;12;-656,384;Inherit;False;Property;_Float0;Float 0;1;0;Create;True;0;0;0;False;0;False;0;0;-1;1;0;1;FLOAT;0
-Node;AmplifyShaderEditor.RGBToHSVNode;9;-672,80;Inherit;True;1;0;FLOAT3;0,0,0;False;4;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3
-Node;AmplifyShaderEditor.HSVToRGBNode;10;-32,96;Inherit;True;3;0;FLOAT;0;False;1;FLOAT;0;False;2;FLOAT;0;False;4;FLOAT3;0;FLOAT;1;FLOAT;2;FLOAT;3
+Node;AmplifyShaderEditor.RangedFloatNode;19;-1488,800;Inherit;False;Property;_NoiseXSpeed;NoiseXSpeed;4;0;Create;True;0;0;0;False;0;False;1;0;0;0;0;1;FLOAT;0
+Node;AmplifyShaderEditor.RangedFloatNode;20;-1488,880;Inherit;False;Property;_NoiseYSpeed;NoiseYSpeed;5;0;Create;True;0;0;0;False;0;False;1;0;0;0;0;1;FLOAT;0
+Node;AmplifyShaderEditor.TextureCoordinatesNode;14;-1376,528;Inherit;True;1;15;2;3;2;SAMPLER2D;;False;0;FLOAT2;1,1;False;1;FLOAT2;0,0;False;5;FLOAT2;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
+Node;AmplifyShaderEditor.DynamicAppendNode;18;-1280,816;Inherit;False;FLOAT2;4;0;FLOAT;0;False;1;FLOAT;0;False;2;FLOAT;0;False;3;FLOAT;0;False;1;FLOAT2;0
+Node;AmplifyShaderEditor.TextureCoordinatesNode;21;-1424,1024;Inherit;True;1;-1;2;3;2;SAMPLER2D;;False;0;FLOAT2;1,1;False;1;FLOAT2;0,0;False;5;FLOAT2;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
+Node;AmplifyShaderEditor.Vector2Node;24;-1360,1312;Inherit;False;Property;_LineSpeed;LineSpeed;7;0;Create;True;0;0;0;False;0;False;0,1;0,0;0;3;FLOAT2;0;FLOAT;1;FLOAT;2
+Node;AmplifyShaderEditor.SinTimeNode;25;-1328,1456;Inherit;False;0;5;FLOAT4;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
+Node;AmplifyShaderEditor.PannerNode;16;-1040,528;Inherit;False;3;0;FLOAT2;0,0;False;2;FLOAT2;0,0;False;1;FLOAT;1;False;1;FLOAT2;0
+Node;AmplifyShaderEditor.PannerNode;23;-1040,1024;Inherit;False;3;0;FLOAT2;0,0;False;2;FLOAT2;0,0;False;1;FLOAT;1;False;1;FLOAT2;0
+Node;AmplifyShaderEditor.SamplerNode;15;-768,512;Inherit;True;Property;_NoiseTex;Noise Tex;3;0;Create;True;0;0;0;False;0;False;-1;None;None;True;0;False;white;Auto;False;Object;-1;Auto;Texture2D;8;0;SAMPLER2D;;False;1;FLOAT2;0,0;False;2;FLOAT;0;False;3;FLOAT2;0,0;False;4;FLOAT2;0,0;False;5;FLOAT;1;False;6;FLOAT;0;False;7;SAMPLERSTATE;;False;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
+Node;AmplifyShaderEditor.SamplerNode;22;-768,1008;Inherit;True;Property;_Line;Line;6;0;Create;True;0;0;0;False;0;False;-1;6fb7e943cac04a0498a9b7ba4df2d9c5;None;True;0;False;white;Auto;False;Object;-1;Auto;Texture2D;8;0;SAMPLER2D;;False;1;FLOAT2;0,0;False;2;FLOAT;0;False;3;FLOAT2;0,0;False;4;FLOAT2;0,0;False;5;FLOAT;1;False;6;FLOAT;0;False;7;SAMPLERSTATE;;False;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
+Node;AmplifyShaderEditor.SimpleMultiplyOpNode;26;-384,832;Inherit;True;2;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
+Node;AmplifyShaderEditor.RangedFloatNode;28;-352,1072;Inherit;False;Property;_Height;Height;8;0;Create;True;0;0;0;False;0;False;-0.8;-0.8;0;0;0;1;FLOAT;0
+Node;AmplifyShaderEditor.VertexColorNode;13;-368,144;Inherit;False;0;5;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4
+Node;AmplifyShaderEditor.SimpleAddOpNode;27;-80,832;Inherit;True;2;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
+Node;AmplifyShaderEditor.SimpleMultiplyOpNode;29;192,832;Inherit;True;2;2;0;FLOAT;0;False;1;FLOAT;0;False;1;FLOAT;0
+Node;AmplifyShaderEditor.ColorNode;9;-1040,-48;Inherit;False;Property;_MainColor;MainColor;1;1;[HDR];Create;True;0;0;0;False;0;False;1,1,1,1;0,0,0,0;True;True;0;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
+Node;AmplifyShaderEditor.ColorNode;12;-736,32;Inherit;False;Property;_SubColor;SubColor;2;0;Create;True;0;0;0;False;0;False;0.03644535,0.2190231,0.3679245,1;0,0,0,0;True;True;0;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
+Node;AmplifyShaderEditor.LerpOp;11;-416,-96;Inherit;True;3;0;COLOR;0,0,0,0;False;1;COLOR;0,0,0,0;False;2;FLOAT;0;False;1;COLOR;0
+Node;AmplifyShaderEditor.SamplerNode;8;-1152,-304;Inherit;True;Property;_MainTex;MainTex;0;0;Create;True;0;0;0;False;0;False;-1;11226be411959bb41a520dbaa0f97a72;11226be411959bb41a520dbaa0f97a72;True;0;False;white;Auto;False;Object;-1;Auto;Texture2D;8;0;SAMPLER2D;;False;1;FLOAT2;0,0;False;2;FLOAT;0;False;3;FLOAT2;0,0;False;4;FLOAT2;0,0;False;5;FLOAT;1;False;6;FLOAT;0;False;7;SAMPLERSTATE;;False;6;COLOR;0;FLOAT;1;FLOAT;2;FLOAT;3;FLOAT;4;FLOAT3;5
+Node;AmplifyShaderEditor.SimpleMultiplyOpNode;10;-672,-272;Inherit;True;2;2;0;FLOAT;0;False;1;COLOR;0,0,0,0;False;1;COLOR;0
+Node;AmplifyShaderEditor.DynamicAppendNode;31;480,832;Inherit;False;FLOAT4;4;0;FLOAT;0;False;1;FLOAT;0;False;2;FLOAT;0;False;3;FLOAT;0;False;1;FLOAT4;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;1;0,0;Float;False;False;-1;3;Rendering.HighDefinition.HDUnlitGUI;0;1;New Amplify Shader;7f5cb9c3ea6481f469fdd856555439ef;True;ShadowCaster;0;1;ShadowCaster;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;3;RenderPipeline=HDRenderPipeline;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;True;5;True;7;d3d11;metal;vulkan;xboxone;xboxseries;playstation;switch;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;0;True;_CullMode;False;True;False;False;False;False;0;False;;False;False;False;False;False;False;False;False;False;True;1;False;;False;False;True;1;LightMode=ShadowCaster;False;False;0;Hidden/InternalErrorShader;0;0;Standard;0;False;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;2;0,0;Float;False;False;-1;3;Rendering.HighDefinition.HDUnlitGUI;0;1;New Amplify Shader;7f5cb9c3ea6481f469fdd856555439ef;True;META;0;2;META;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;3;RenderPipeline=HDRenderPipeline;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;True;5;True;7;d3d11;metal;vulkan;xboxone;xboxseries;playstation;switch;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;2;False;;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;1;LightMode=Meta;False;False;0;Hidden/InternalErrorShader;0;0;Standard;0;False;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;3;0,0;Float;False;False;-1;3;Rendering.HighDefinition.HDUnlitGUI;0;1;New Amplify Shader;7f5cb9c3ea6481f469fdd856555439ef;True;SceneSelectionPass;0;3;SceneSelectionPass;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;3;RenderPipeline=HDRenderPipeline;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;True;5;True;7;d3d11;metal;vulkan;xboxone;xboxseries;playstation;switch;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;2;False;;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;1;LightMode=SceneSelectionPass;False;False;0;Hidden/InternalErrorShader;0;0;Standard;0;False;0
@@ -3097,13 +2855,30 @@ Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;4;0,0;Float;False;False;-1;
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;5;0,0;Float;False;False;-1;3;Rendering.HighDefinition.HDUnlitGUI;0;1;New Amplify Shader;7f5cb9c3ea6481f469fdd856555439ef;True;MotionVectors;0;5;MotionVectors;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;3;RenderPipeline=HDRenderPipeline;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;True;5;True;7;d3d11;metal;vulkan;xboxone;xboxseries;playstation;switch;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;0;True;_CullMode;False;False;False;False;False;False;False;False;False;True;True;0;True;_StencilRefMV;255;False;;255;True;_StencilWriteMaskMV;7;False;;3;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;False;True;1;False;;False;False;True;1;LightMode=MotionVectors;False;False;0;Hidden/InternalErrorShader;0;0;Standard;0;False;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;6;0,0;Float;False;False;-1;3;Rendering.HighDefinition.HDUnlitGUI;0;1;New Amplify Shader;7f5cb9c3ea6481f469fdd856555439ef;True;DistortionVectors;0;6;DistortionVectors;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;3;RenderPipeline=HDRenderPipeline;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;True;5;True;7;d3d11;metal;vulkan;xboxone;xboxseries;playstation;switch;0;False;True;4;1;False;;1;False;;4;1;False;;1;False;;True;1;False;;1;False;;False;False;False;False;False;False;False;False;False;False;False;True;0;True;_CullMode;False;False;False;False;False;False;False;False;False;True;True;0;True;_StencilRefDistortionVec;255;False;;255;True;_StencilWriteMaskDistortionVec;7;False;;3;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;False;True;2;False;;True;3;False;;False;True;1;LightMode=DistortionVectors;False;False;0;Hidden/InternalErrorShader;0;0;Standard;0;False;0
 Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;7;0,0;Float;False;False;-1;3;Rendering.HighDefinition.HDUnlitGUI;0;1;New Amplify Shader;7f5cb9c3ea6481f469fdd856555439ef;True;ScenePickingPass;0;7;ScenePickingPass;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;3;RenderPipeline=HDRenderPipeline;RenderType=Opaque=RenderType;Queue=Geometry=Queue=0;True;5;True;7;d3d11;metal;vulkan;xboxone;xboxseries;playstation;switch;0;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;0;True;_CullMode;False;False;False;False;False;False;False;False;False;False;False;True;2;False;;True;3;False;;False;True;1;LightMode=Picking;False;False;0;Hidden/InternalErrorShader;0;0;Standard;0;False;0
-Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;0;320,96;Float;False;True;-1;3;Rendering.HighDefinition.HDUnlitGUI;0;13;Hue;7f5cb9c3ea6481f469fdd856555439ef;True;Forward Unlit;0;0;Forward Unlit;9;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;3;RenderPipeline=HDRenderPipeline;RenderType=Transparent=RenderType;Queue=Transparent=Queue=0;True;5;True;7;d3d11;metal;vulkan;xboxone;xboxseries;playstation;switch;0;False;False;False;False;True;3;1;False;;10;False;;0;1;False;;0;False;;False;False;True;1;1;False;;0;True;_DstBlend2;0;1;False;;0;False;;False;False;True;1;1;False;;0;True;_DstBlend2;0;1;False;;0;False;;False;False;False;True;0;True;_CullModeForward;False;False;False;True;True;True;True;True;0;True;_ColorMaskTransparentVel;False;False;False;False;False;True;True;0;True;_StencilRef;255;False;;255;True;_StencilWriteMask;7;False;;3;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;False;True;0;True;_ZWrite;True;0;True;_ZTestDepthEqualForOpaque;False;True;1;LightMode=ForwardOnly;False;False;0;Hidden/InternalErrorShader;0;0;Standard;30;Surface Type;0;0;  Rendering Pass ;0;0;  Rendering Pass;1;0;  Blending Mode;0;0;  Receive Fog;1;0;  Distortion;0;0;    Distortion Mode;0;0;    Distortion Only;1;0;  Depth Write;1;0;  Cull Mode;0;0;  Depth Test;4;0;Double-Sided;0;0;Alpha Clipping;0;0;Receive Decals;1;0;Motion Vectors;1;0;  Add Precomputed Velocity;0;0;Shadow Matte;0;0;Cast Shadows;1;0;GPU Instancing;1;0;Tessellation;0;0;  Phong;0;0;  Strength;0.5,False,;0;  Type;0;0;  Tess;16,False,;0;  Min;10,False,;0;  Max;25,False,;0;  Edge Length;16,False,;0;  Max Displacement;25,False,;0;Vertex Position,InvertActionOnDeselection;1;0;LOD CrossFade;0;0;0;8;True;True;True;True;True;True;False;True;False;;False;0
-WireConnection;11;0;9;1
-WireConnection;11;1;12;0
-WireConnection;9;0;8;0
-WireConnection;10;0;11;0
-WireConnection;10;1;9;2
-WireConnection;10;2;9;3
-WireConnection;0;0;10;0
+Node;AmplifyShaderEditor.TemplateMultiPassMasterNode;0;752,-96;Float;False;True;-1;3;Rendering.HighDefinition.HDUnlitGUI;0;13;Triangular Columns VertexOffset;7f5cb9c3ea6481f469fdd856555439ef;True;Forward Unlit;0;0;Forward Unlit;9;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;False;True;3;RenderPipeline=HDRenderPipeline;RenderType=Transparent=RenderType;Queue=Transparent=Queue=0;True;5;True;1;d3d11;0;False;False;False;False;True;3;1;False;;10;False;;0;1;False;;0;False;;False;False;True;1;1;False;;0;True;_DstBlend2;0;1;False;;0;False;;False;False;True;1;1;False;;0;True;_DstBlend2;0;1;False;;0;False;;False;False;False;True;0;True;_CullModeForward;False;False;False;True;True;True;True;True;0;True;_ColorMaskTransparentVel;False;False;False;False;False;True;True;0;True;_StencilRef;255;False;;255;True;_StencilWriteMask;7;False;;3;False;;0;False;;0;False;;0;False;;0;False;;0;False;;0;False;;True;True;0;True;_ZWrite;True;0;True;_ZTestDepthEqualForOpaque;False;True;1;LightMode=ForwardOnly;False;False;0;Hidden/InternalErrorShader;0;0;Standard;30;Surface Type;1;638766910987139611;  Rendering Pass ;0;0;  Rendering Pass;1;0;  Blending Mode;0;0;  Receive Fog;0;638766911093498514;  Distortion;0;0;    Distortion Mode;0;0;    Distortion Only;1;0;  Depth Write;1;0;  Cull Mode;0;0;  Depth Test;4;0;Double-Sided;0;0;Alpha Clipping;0;0;Receive Decals;1;0;Motion Vectors;1;0;  Add Precomputed Velocity;0;0;Shadow Matte;0;0;Cast Shadows;0;638766914600696947;GPU Instancing;1;0;Tessellation;0;0;  Phong;0;0;  Strength;0.5,False,;0;  Type;0;0;  Tess;16,False,;0;  Min;10,False,;0;  Max;25,False,;0;  Edge Length;16,False,;0;  Max Displacement;25,False,;0;Vertex Position,InvertActionOnDeselection;1;0;LOD CrossFade;0;0;0;8;True;False;True;True;True;True;False;True;False;;False;0
+WireConnection;18;0;19;0
+WireConnection;18;1;20;0
+WireConnection;16;0;14;0
+WireConnection;16;2;18;0
+WireConnection;23;0;21;0
+WireConnection;23;2;24;0
+WireConnection;23;1;25;4
+WireConnection;15;1;16;0
+WireConnection;22;1;23;0
+WireConnection;26;0;15;1
+WireConnection;26;1;22;1
+WireConnection;27;0;26;0
+WireConnection;27;1;28;0
+WireConnection;29;0;27;0
+WireConnection;29;1;13;4
+WireConnection;11;0;12;0
+WireConnection;11;1;10;0
+WireConnection;11;2;8;1
+WireConnection;10;0;8;1
+WireConnection;10;1;9;0
+WireConnection;31;2;29;0
+WireConnection;0;0;11;0
+WireConnection;0;2;13;4
+WireConnection;0;6;31;0
 ASEEND*/
-//CHKSM=C78FD9377FB6296F9510D655C7C285F860E456E7
+//CHKSM=4A71ABFE6CDB889599748EA2456FC5FECDE6F17D
