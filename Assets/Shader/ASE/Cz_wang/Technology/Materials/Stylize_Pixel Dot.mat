@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Spring Wire VertexOffset
-  m_Shader: {fileID: 4800000, guid: 03c144120fa965a439f0c0248c97bf58, type: 3}
+  m_Name: Stylize_Pixel Dot
+  m_Shader: {fileID: 4800000, guid: 3d123ae2203a5ae478041b22ac3a98b5, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -30,11 +30,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 6fb7e943cac04a0498a9b7ba4df2d9c5, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _NoiseTex:
-        m_Texture: {fileID: 2800000, guid: ef703ab53829f524eb8da6550f01624e, type: 3}
+        m_Texture: {fileID: 2800000, guid: 1cb2e5e20a8dda84e954fdd15ff32b9b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _texcoord:
@@ -46,9 +42,9 @@ Material:
     - _AddPrecomputedVelocity: 1
     - _AlphaCutoff: 0.5
     - _AlphaCutoffEnable: 0
-    - _AlphaDstBlend: 1
+    - _AlphaDstBlend: 10
     - _AlphaSrcBlend: 0
-    - _BlendMode: 1
+    - _BlendMode: 0
     - _CullMode: 2
     - _CullModeForward: 2
     - _DistortionEnable: 0
@@ -56,9 +52,9 @@ Material:
     - _DoubleSidedEnable: 0
     - _DoubleSidedGIMode: 0
     - _DoubleSidedNormalMode: 2
-    - _DstBlend: 1
+    - _DstBlend: 10
     - _EnableFogOnTransparent: 1
-    - _OffsetIntensity: 10
+    - _Lerp: 0
     - _OpaqueCullMode: 2
     - _ReceivesSSR: 1
     - _ReceivesSSRTransparent: 0
@@ -90,8 +86,8 @@ Material:
     m_Colors:
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
-    - _MainColor: {r: 16, g: 0, b: 0, a: 1}
-    - _NoiseSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _MainColor: {r: 7.9066997, g: 7.9066997, b: 7.9066997, a: 1}
+    - _Tilling: {r: 100, g: 100, b: 0, a: 0}
     - _UnlitColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
