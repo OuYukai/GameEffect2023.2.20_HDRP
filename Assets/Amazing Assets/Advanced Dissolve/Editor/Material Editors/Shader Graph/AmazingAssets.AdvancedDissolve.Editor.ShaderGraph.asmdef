@@ -1,0 +1,21 @@
+{
+    "name": "AmazingAssets.AdvancedDissolve.Editor.ShaderGraph",
+    "rootNamespace": "",
+    "references": [
+        "GUID:0539863720804864389d74d2254a0767",
+        "GUID:86a33cf8aeedc1f4ab99c186cb8ef6d1",
+        "GUID:78bd2ddd6e276394a9615c203e574844",
+        "GUID:3eae0364be2026648bf74846acb8a731"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
