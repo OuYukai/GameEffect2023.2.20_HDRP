@@ -34,7 +34,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MaskTex:
-        m_Texture: {fileID: 2800000, guid: dbec9039c70e09e47b8ff15d508f39ac, type: 3}
+        m_Texture: {fileID: 2800000, guid: 5561acfd13e7ff849b1ab3b202388d45, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -85,7 +85,7 @@ Material:
     m_Colors:
     - _DoubleSidedConstants: {r: 1, g: 1, b: -1, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
-    - _MainTexSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _MainTexSpeed: {r: 1, g: 0, b: 0, a: 0}
     - _MaskTexSpeed: {r: 0, g: 0, b: 0, a: 0}
     - _UnlitColorMap_MipInfo: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
