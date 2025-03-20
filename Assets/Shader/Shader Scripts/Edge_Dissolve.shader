@@ -1,49 +1,45 @@
-Shader "ShaderResearch/Mask"
+﻿Shader "ShaderResearch/Edge_Dissolve"
 {
     Properties
     {
-        [HDR]_MainColor ("Base Color", Color) = (1, 1, 1, 1)
-        
         _MainTex ("Main Tex", 2D) = "white" {}
-        _MainTexSpeed("MainTexSpeed", Vector) = (0,0,0,0)
-        _NoiseTex ("Noise Tex", 2D) = "white" {}
-        _NoiseTexSpeed("MaskTexSpeed", Vector) = (0,0,0,0)
+        _NoiseTex("Noise Tex", 2D) = "White" {}
+        _Progress("Progress", Range( 0 , 1.05)) = 1
+        _EdgeWidth("Edge Width", Float) = 0.02
+        [HDR]_EdgeColor ("Edge Color", Color) = (1, 1, 1, 1)
     }
-
+    
     SubShader
     {
         Tags { "RenderPipeline" = "HDRenderPipeline" "RenderType" = "Transparent" "Queue"="Transparent" }
 
-        Blend One One
+        Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
         
         Pass
         {
-            Name "ForwardOnly"
-            Tags { "LightMode"="ForwardOnly" }
-
+           Name "ForwardOnly"
+           Tags { "LightMode"="ForwardOnly" }
+            
             HLSLPROGRAM
+
             #pragma vertex vert
             #pragma fragment frag
-            
+
             #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
-            #include "Assets/Shader/Shader Scripts/ShaderLibrary/ShaderFunctions.hlsl"
-            
-            //CBUFFER_START(UnityPerMaterial)
-            float4 _MainColor;
             float4 _MainTex_ST;
-            float2 _MainTexSpeed;
             float4 _NoiseTex_ST;
-            float2 _NoiseTexSpeed;
-            //CBUFFER_END
-            
+            float _Progress;
+            float _EdgeWidth;
+            float4 _EdgeColor;
+
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
             TEXTURE2D(_NoiseTex);
             SAMPLER(sampler_NoiseTex);
-            
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -61,25 +57,27 @@ Shader "ShaderResearch/Mask"
             {
                 Varyings output;
                 output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+
                 output.uv_MainTex = TRANSFORM_TEX(input.uv, _MainTex);
                 output.uv_NoiseTex= TRANSFORM_TEX(input.uv, _NoiseTex);
-                
                 return output;
             }
-            
+
             float4 frag(Varyings input) : SV_Target
             {
-                input.uv_MainTex = Panner(_MainTex_ST.xy, input.uv_MainTex, _MainTexSpeed, _Time.y);
-                input.uv_NoiseTex= Panner(_NoiseTex_ST.xy, input.uv_NoiseTex, _NoiseTexSpeed, _Time.y);
-                
-                float4 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv_MainTex);
-                float4 noiseColor = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, input.uv_NoiseTex);
-                
-                float4 finalColor = texColor * _MainColor * noiseColor;
-                
-                return finalColor;
-            }
+                float4 mainTexColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv_MainTex);
+                float4 noiseTexColor= SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, input.uv_NoiseTex);
 
+                float noiseAlpha = step(_Progress, (noiseTexColor.r + _EdgeWidth));
+                float edgeAlpha  = noiseAlpha - step(_Progress, noiseTexColor.r);
+
+                float4 edgeColor = _EdgeColor * edgeAlpha * mainTexColor.a;
+                
+                float4 color = lerp(mainTexColor, edgeColor, edgeAlpha);
+                float alpha = noiseAlpha * mainTexColor.a;
+                return float4(color.rgb, alpha);
+            }
+            
             ENDHLSL
         }
     }
